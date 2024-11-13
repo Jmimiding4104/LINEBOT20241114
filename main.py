@@ -1,35 +1,39 @@
-from flask import Flask, request, abort
+from flask import Flask, request
+
+# 載入 json 標準函式庫，處理回傳的資料格式
+import json
+
+# 載入 LINE Message API 相關函式庫
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
 from linebot.models import MessageEvent, TextMessage, TextSendMessage
 
 app = Flask(__name__)
 
-# 使用您的 Channel Access Token 和 Channel Secret
-line_bot_api = LineBotApi('2006566438')
-handler = WebhookHandler('84d36b609616d351c7c3cba259f0b769')
-
-@app.route("/callback", methods=['POST'])
-def callback():
-    # 驗證請求是否來自 LINE
-    signature = request.headers['X-Line-Signature']
-    body = request.get_data(as_text=True)
-    
+@app.route("/", methods=['POST'])
+def linebot():
+    body = request.get_data(as_text=True)                    # 取得收到的訊息內容
     try:
-        handler.handle(body, signature)
-    except InvalidSignatureError:
-        abort(400)
-    
-    return 'OK'
-
-# 設置處理訊息的回調函數
-@handler.add(MessageEvent, message=TextMessage)
-def handle_message(event):
-    # 回傳相同的訊息給用戶
-    line_bot_api.reply_message(
-        event.reply_token,
-        TextSendMessage(text=event.message.text)
-    )
+        json_data = json.loads(body)                         # json 格式化訊息內容
+        access_token = '2006566438'
+        secret = '84d36b609616d351c7c3cba259f0b769'
+        line_bot_api = LineBotApi(access_token)              # 確認 token 是否正確
+        handler = WebhookHandler(secret)                     # 確認 secret 是否正確
+        signature = request.headers['X-Line-Signature']      # 加入回傳的 headers
+        handler.handle(body, signature)                      # 綁定訊息回傳的相關資訊
+        tk = json_data['events'][0]['replyToken']            # 取得回傳訊息的 Token
+        type = json_data['events'][0]['message']['type']     # 取得 LINe 收到的訊息類型
+        if type=='text':
+            msg = json_data['events'][0]['message']['text']  # 取得 LINE 收到的文字訊息
+            print(msg)                                       # 印出內容
+            reply = msg
+        else:
+            reply = '你傳的不是文字呦～'
+        print(tk)
+        line_bot_api.reply_message(tk,TextSendMessage(reply))# 回傳訊息
+    except:
+        print(body)                                          # 如果發生錯誤，印出收到的內容
+    return 'OK'                                              # 驗證 Webhook 使用，不能省略
 
 if __name__ == "__main__":
     app.run()
