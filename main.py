@@ -120,7 +120,6 @@ def handle_message(event):
             lineId = event.source.user_id
             
             if re.match(r'^[A-Za-z]\d{9}$', idNumber):
-                print("OK")
                 try:
                     response = requests.post(
                         url="https://linebotapi-tgkg.onrender.com/linkLineID/",
@@ -152,7 +151,7 @@ def handle_message(event):
             response = requests.put(
                 url="https://linebotapi-tgkg.onrender.com/add/healthMeasurement",
                 json={
-                    "user_id": user_info["user_id"]
+                    "lineId": user_info["user_id"]
                 }  # 傳遞的 JSON 資料
             )
             if response.status_code == 200:
