@@ -298,7 +298,7 @@ def handle_postback(event):
 
 
 if __name__ == "__main__":
-    app.run()
+    port = int(os.getenv("PORT", 5000))  # 默認使用 5000，但優先使用環境變數 PORT
+    app.run(host="0.0.0.0", port=port)
 
-app.run(host="0.0.0.0", port=5000)
 # ngrok http http://127.0.0.1:5000
