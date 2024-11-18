@@ -37,6 +37,7 @@ configuration = Configuration(
     access_token=access_token)
 handler = WebhookHandler(secret)
 
+'''
 def send_operation_options(line_bot_api, user_id):
     print(user_id)
     buttons_template = ButtonsTemplate(
@@ -81,7 +82,7 @@ def send_other_operation_options(line_bot_api, user_id):
             messages=[template_message]
         )
     )
-
+'''
 @app.route("/", methods=['POST'])
 def linebot():
     global user_info
@@ -107,7 +108,62 @@ def handle_message(event):
     with ApiClient(configuration) as api_client:
         line_bot_api = MessagingApi(api_client)
         user_info["user_id"] = event.source.user_id
+        
+        if event.message.text == "連結 LINE 集點":
+            reply_text = "請輸入身分證字號"
+            user_info["step"] = 1
+            line_bot_api.reply_message_with_http_info(ReplyMessageRequest(
+                reply_token=event.reply_token, messages=[TextMessage(text=reply_text)]))
+            
+        elif user_info["step"] == 1:
+            idNumber = event.message.text
+            lineId = event.source.user_id
+            
+            if re.match(r'^[A-Za-z]\d{9}$', idNumber):
+                print("OK")
+                try:
+                    response = requests.post(
+                        url="https://linebotapi-tgkg.onrender.com/linkLineID/",
+                        json={
+                            "idNumber": idNumber,
+                            "lineId": lineId
+                        }
+                    )
+                    if response.status_code == 200:
+                        reply_text = "連結成功"
+                    else:
+                        reply_text = "重複連結或錯誤，請確認!"
+                except Exception as e:
+                    print(f"Error during request: {e}")
+                    reply_text = "請聯絡管理員"
 
+                line_bot_api.reply_message_with_http_info(ReplyMessageRequest(
+                    reply_token=event.reply_token, messages=[TextMessage(text=reply_text)]))
+                
+                # 完成步驟後，重設步驟狀態（如果需要）
+                user_info["step"] = 0  # 重設步驟為0
+            else:
+                reply_text = "身分證字號格式錯誤，請輸入有效的身分證字號（1個字母 + 9個數字）"
+                line_bot_api.reply_message_with_http_info(ReplyMessageRequest(
+                    reply_token=event.reply_token, messages=[TextMessage(text=reply_text)]))
+
+        elif event.message.text == "集點":
+            user_info["user_id"] = event.source.user_id
+            response = requests.put(
+                url="https://linebotapi-tgkg.onrender.com/add/healthMeasurement",
+                json={
+                    "idNumber": user_info["idNumber"]
+                }  # 傳遞的 JSON 資料
+            )
+            if response.status_code == 200:
+                reply_text = "集點完成"
+                line_bot_api.reply_message_with_http_info(ReplyMessageRequest(
+                    reply_token=event.reply_token, messages=[TextMessage(text=reply_text)]))
+            else:
+                reply_text = "集點失敗！請稍後嘗試!"
+                line_bot_api.reply_message_with_http_info(ReplyMessageRequest(
+                    reply_token=event.reply_token, messages=[TextMessage(text=reply_text)]))
+        '''
         if event.message.text == "新會員":
             user_info["step"] = 1
             reply_text = "請輸入姓名"
@@ -159,7 +215,7 @@ def handle_message(event):
             user_info["idNumber"] = event.message.text
             try:
                 response = requests.get(
-                    url="https://linebotapi-d8a1.onrender.com/search/",
+                    url="https://linebotapi-tgkg.onrender.com/search/",
                     json={
                         "idNumber": user_info["idNumber"]
                     }
@@ -174,8 +230,8 @@ def handle_message(event):
                         reply_token=event.reply_token, messages=[TextMessage(text=reply_text)]))
             except:
                 reply_text = "請聯絡管理員"
-
-
+        ''' 
+        
 @handler.add(PostbackEvent)
 def handle_postback(event):
     global user_info
@@ -188,7 +244,7 @@ def handle_postback(event):
         if data == "correct":
             try:
                 response = requests.post(
-                    url="https://linebotapi-d8a1.onrender.com/add_user/",
+                    url="https://linebotapi-tgkg.onrender.com/add_user/",
                     json={
                         "name": user_info["name"],
                         "idNumber": user_info["idNumber"],
@@ -249,7 +305,7 @@ def handle_postback(event):
                 reply_token=event.reply_token, messages=[TextMessage(text=reply_text)]))
         elif data == "monitor":
             response = requests.put(
-                url="https://linebotapi-d8a1.onrender.com/add/healthMeasurement",
+                url="https://linebotapi-tgkg.onrender.com/add/healthMeasurement",
                 json={
                     "idNumber": user_info["idNumber"]
                 }  # 傳遞的 JSON 資料
@@ -265,7 +321,7 @@ def handle_postback(event):
                     reply_token=event.reply_token, messages=[TextMessage(text=reply_text)]))
         elif data == "educate":
             response = requests.put(
-                url="https://linebotapi-d8a1.onrender.com/add/healthEducation",
+                url="https://linebotapi-tgkg.onrender.com/add/healthEducation",
                 json={
                     "idNumber": user_info["idNumber"]
                 }  # 傳遞的 JSON 資料
@@ -281,7 +337,7 @@ def handle_postback(event):
             send_other_operation_options(line_bot_api, user_info["user_id"])
         elif data == "exercise":
             response = requests.put(
-                url="https://linebotapi-d8a1.onrender.com/add/exercise",
+                url="https://linebotapi-tgkg.onrender.com/add/exercise",
                 json={
                     "idNumber": user_info["idNumber"]
                 }  # 傳遞的 JSON 資料
