@@ -300,4 +300,5 @@ def handle_postback(event):
 if __name__ == "__main__":
     app.run()
 
+app.run(host="0.0.0.0", port=5000)
 # ngrok http http://127.0.0.1:5000
