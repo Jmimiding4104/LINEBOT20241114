@@ -9,7 +9,8 @@ from linebot.v3.messaging import (
     TextMessage,
     TemplateMessage,
     ButtonsTemplate,
-    PostbackAction
+    PostbackAction,
+    PushMessageRequest
 )
 from linebot.v3.webhooks import MessageEvent, TextMessageContent, PostbackEvent
 import re
@@ -18,6 +19,7 @@ import requests
 app = Flask(__name__)
 
 user_info = {
+    "user_id":None,
     "name": None,
     "idNumber": None,
     "tel": None,
@@ -29,7 +31,8 @@ configuration = Configuration(
 handler = WebhookHandler('84d36b609616d351c7c3cba259f0b769')
 
 
-def send_operation_options(line_bot_api, reply_token):
+def send_operation_options(line_bot_api, user_id):
+    print(user_id)
     buttons_template = ButtonsTemplate(
         title="請問你要進行什麼操作？",
         text="請點擊以下選項",
@@ -43,11 +46,15 @@ def send_operation_options(line_bot_api, reply_token):
         alt_text="請問你要進行什麼操作？",
         template=buttons_template
     )
-    line_bot_api.reply_message_with_http_info(ReplyMessageRequest(
-        reply_token=reply_token, messages=[template_message]))
+    line_bot_api.push_message_with_http_info(
+        PushMessageRequest(
+            to=user_id,
+            messages=[template_message]
+        )
+    )
 
 
-def send_other_operation_options(line_bot_api, reply_token):
+def send_other_operation_options(line_bot_api, user_id):
     buttons_template = ButtonsTemplate(
         title="請問你還需要處理其他項目嗎？",
         text="請點擊以下選項",
@@ -58,14 +65,16 @@ def send_other_operation_options(line_bot_api, reply_token):
             PostbackAction(label="登出", data="logout")
         ]
     )
-
     template_message = TemplateMessage(
         alt_text="請問你還需要處理其他項目嗎？",
         template=buttons_template
     )
-    line_bot_api.reply_message_with_http_info(ReplyMessageRequest(
-        reply_token=reply_token, messages=[template_message]))
-
+    line_bot_api.push_message_with_http_info(
+        PushMessageRequest(
+            to=user_id,
+            messages=[template_message]
+        )
+    )
 
 @app.route("/", methods=['POST'])
 def linebot():
@@ -91,7 +100,7 @@ def linebot():
 def handle_message(event):
     with ApiClient(configuration) as api_client:
         line_bot_api = MessagingApi(api_client)
-        tk = event.reply_token
+        user_info["user_id"] = event.source.user_id
 
         if event.message.text == "新會員":
             user_info["step"] = 1
@@ -141,7 +150,24 @@ def handle_message(event):
             line_bot_api.reply_message_with_http_info(ReplyMessageRequest(
                 reply_token=event.reply_token, messages=[template_message]))
         elif re.match(r'^[A-Za-z]\d{9}$', event.message.text) or user_info["step"] == 4:
-            send_operation_options(line_bot_api, tk)
+            user_info["idNumber"] = event.message.text
+            try:
+                response = requests.get(
+                    url="https://pypypy-lq48.onrender.com/search/",
+                    json={
+                        "idNumber": user_info["idNumber"]
+                    }
+                )
+                print(response,user_info["idNumber"])
+                if response.status_code == 200:
+                    
+                    send_operation_options(line_bot_api, user_info["user_id"])
+                else:
+                    reply_text = "請註冊!!"
+                    line_bot_api.reply_message_with_http_info(ReplyMessageRequest(
+                        reply_token=event.reply_token, messages=[TextMessage(text=reply_text)]))
+            except:
+                reply_text = "請聯絡管理員"
 
 
 @handler.add(PostbackEvent)
@@ -154,7 +180,6 @@ def handle_postback(event):
         data = event.postback.data
 
         if data == "correct":
-            print(user_info)
             try:
                 response = requests.post(
                     url="https://pypypy-lq48.onrender.com/add_user/",  # 替換成你的 API URL
@@ -217,11 +242,53 @@ def handle_postback(event):
             line_bot_api.reply_message_with_http_info(ReplyMessageRequest(
                 reply_token=event.reply_token, messages=[TextMessage(text=reply_text)]))
         elif data == "monitor":
-            send_other_operation_options(line_bot_api, tk)
+            response = requests.put(
+                url="https://pypypy-lq48.onrender.com/add/healthMeasurement",  # 替換成你的 API URL
+                json={
+                    "idNumber": user_info["idNumber"]
+                }  # 傳遞的 JSON 資料
+            )
+            if response.status_code == 200:
+                reply_text = "集點完成"
+                line_bot_api.reply_message_with_http_info(ReplyMessageRequest(
+                    reply_token=event.reply_token, messages=[TextMessage(text=reply_text)]))
+                send_other_operation_options(line_bot_api, user_info["user_id"])
+            else:
+                reply_text = "集點失敗！請稍後嘗試!"
+                line_bot_api.reply_message_with_http_info(ReplyMessageRequest(
+                    reply_token=event.reply_token, messages=[TextMessage(text=reply_text)]))
         elif data == "educate":
-            send_other_operation_options(line_bot_api, tk)
+            response = requests.put(
+                url="https://pypypy-lq48.onrender.com/add/healthEducation",  # 替換成你的 API URL
+                json={
+                    "idNumber": user_info["idNumber"]
+                }  # 傳遞的 JSON 資料
+            )
+            if response.status_code == 200:
+                reply_text = "集點完成"
+                line_bot_api.reply_message_with_http_info(ReplyMessageRequest(
+                    reply_token=event.reply_token, messages=[TextMessage(text=reply_text)]))
+            else:
+                reply_text = "集點失敗！請稍後嘗試!"
+                line_bot_api.reply_message_with_http_info(ReplyMessageRequest(
+                    reply_token=event.reply_token, messages=[TextMessage(text=reply_text)]))
+            send_other_operation_options(line_bot_api, user_info["user_id"])
         elif data == "exercise":
-            send_other_operation_options(line_bot_api, tk)
+            response = requests.put(
+                url="https://pypypy-lq48.onrender.com/add/exercise",  # 替換成你的 API URL
+                json={
+                    "idNumber": user_info["idNumber"]
+                }  # 傳遞的 JSON 資料
+            )
+            if response.status_code == 200:
+                reply_text = "集點完成"
+                line_bot_api.reply_message_with_http_info(ReplyMessageRequest(
+                    reply_token=event.reply_token, messages=[TextMessage(text=reply_text)]))
+            else:
+                reply_text = "集點失敗！請稍後嘗試!"
+                line_bot_api.reply_message_with_http_info(ReplyMessageRequest(
+                    reply_token=event.reply_token, messages=[TextMessage(text=reply_text)]))
+            send_other_operation_options(line_bot_api, user_info["user_id"])
 
 
 if __name__ == "__main__":
