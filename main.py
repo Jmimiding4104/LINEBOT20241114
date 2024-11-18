@@ -43,12 +43,8 @@ def send_operation_options(line_bot_api, reply_token):
         alt_text="請問你要進行什麼操作？",
         template=buttons_template
     )
-    line_bot_api.reply_message_with_http_info(
-        ReplyMessageRequest(
-            reply_token=reply_token,
-            messages=[template_message]
-        )
-    )
+    line_bot_api.reply_message_with_http_info(ReplyMessageRequest(
+        reply_token=reply_token, messages=[template_message]))
 
 
 def send_other_operation_options(line_bot_api, reply_token):
@@ -67,12 +63,8 @@ def send_other_operation_options(line_bot_api, reply_token):
         alt_text="請問你還需要處理其他項目嗎？",
         template=buttons_template
     )
-    line_bot_api.reply_message_with_http_info(
-        ReplyMessageRequest(
-            reply_token=reply_token,
-            messages=[template_message]
-        )
-    )
+    line_bot_api.reply_message_with_http_info(ReplyMessageRequest(
+        reply_token=reply_token, messages=[template_message]))
 
 
 @app.route("/", methods=['POST'])
@@ -89,10 +81,8 @@ def linebot():
     # handle webhook body
     try:
         handler.handle(body, signature)
-    except InvalidSignatureError:
-        app.logger.info(
-            "Invalid signature. Please check your channel access token/channel secret.")
-        abort(400)
+    except Exception as e:
+        app.logger.error(f"Error: {e}")
 
     return 'OK'
 
@@ -106,41 +96,25 @@ def handle_message(event):
         if event.message.text == "新會員":
             user_info["step"] = 1
             reply_text = "請輸入姓名"
-            line_bot_api.reply_message_with_http_info(
-                ReplyMessageRequest(
-                    reply_token=tk,
-                    messages=[TextMessage(text=reply_text)]
-                )
-            )
+            line_bot_api.reply_message_with_http_info(ReplyMessageRequest(
+                reply_token=event.reply_token, messages=[TextMessage(text=reply_text)]))
         elif user_info["step"] == 1:
             user_info["name"] = event.message.text
             user_info["step"] = 2
             reply_text = "請輸入身分證字號"
-            line_bot_api.reply_message_with_http_info(
-                ReplyMessageRequest(
-                    reply_token=tk,
-                    messages=[TextMessage(text=reply_text)]
-                )
-            )
+            line_bot_api.reply_message_with_http_info(ReplyMessageRequest(
+                reply_token=event.reply_token, messages=[TextMessage(text=reply_text)]))
         elif user_info["step"] == 2:
             if re.match(r'^[A-Za-z]\d{9}$', event.message.text):
                 user_info["idNumber"] = event.message.text
                 user_info["step"] = 3
                 reply_text = "請輸入電話號碼"
-                line_bot_api.reply_message_with_http_info(
-                    ReplyMessageRequest(
-                        reply_token=tk,
-                        messages=[TextMessage(text=reply_text)]
-                    )
-                )
+                line_bot_api.reply_message_with_http_info(ReplyMessageRequest(
+                    reply_token=event.reply_token, messages=[TextMessage(text=reply_text)]))
             else:
                 reply_text = "格式錯誤！請輸入 1 個英文字母和 9 個數字。"
-                line_bot_api.reply_message_with_http_info(
-                    ReplyMessageRequest(
-                        reply_token=tk,
-                        messages=[TextMessage(text=reply_text)]
-                    )
-                )
+                line_bot_api.reply_message_with_http_info(ReplyMessageRequest(
+                    reply_token=event.reply_token, messages=[TextMessage(text=reply_text)]))
         elif user_info["step"] == 3:
             user_info["tel"] = event.message.text
             user_info["step"] = 4
@@ -164,31 +138,9 @@ def handle_message(event):
                 template=buttons_template
             )
 
-            line_bot_api.reply_message_with_http_info(
-                ReplyMessageRequest(
-                    reply_token=tk,
-                    messages=[template_message]
-                )
-            )
+            line_bot_api.reply_message_with_http_info(ReplyMessageRequest(
+                reply_token=event.reply_token, messages=[template_message]))
         elif re.match(r'^[A-Za-z]\d{9}$', event.message.text) or user_info["step"] == 4:
-            if (event.message.text):
-                try:
-                    response = requests.get(
-                        url="https://pypypy-lq48.onrender.com/search/",  # 替換成你的 API URL
-                        json={"idNumber": event.message.text}  # 傳遞的 JSON 資料
-                    )
-                    if response.status_code == 200:
-                        reply_text = "登入完成"
-                    else:
-                        reply_text = "登入失敗"
-                except:
-                    reply_text = "請聯絡管理員"
-            line_bot_api.reply_message_with_http_info(
-                ReplyMessageRequest(
-                    reply_token=tk,
-                    messages=[TextMessage(text=reply_text)]
-                )
-            )
             send_operation_options(line_bot_api, tk)
 
 
@@ -202,34 +154,29 @@ def handle_postback(event):
         data = event.postback.data
 
         if data == "correct":
+            print(user_info)
             try:
                 response = requests.post(
                     url="https://pypypy-lq48.onrender.com/add_user/",  # 替換成你的 API URL
-                    json=user_info  # 傳遞的 JSON 資料
+                    json={
+                        "name": user_info["name"],
+                        "idNumber": user_info["idNumber"],
+                        "tel": user_info["tel"]
+                    }  # 傳遞的 JSON 資料
                 )
                 if response.status_code == 200:
-                    line_bot_api.reply_message_with_http_info(
-                        ReplyMessageRequest(
-                    reply_token=tk,
-                    messages=[TextMessage("註冊完成！請輸入身分證字號登入")]
-                        )
-                    )
+                    reply_text = "註冊完成！請輸入身分證字號登入"
+                    line_bot_api.reply_message_with_http_info(ReplyMessageRequest(
+                        reply_token=event.reply_token, messages=[TextMessage(text=reply_text)]))
                 else:
-                    line_bot_api.reply_message_with_http_info(
-                        ReplyMessageRequest(
-                    reply_token=tk,
-                    messages=[TextMessage("註冊失敗！請稍後嘗試!")]
-                        )
-                    )
+                    reply_text = "註冊失敗！請稍後嘗試!"
+                    line_bot_api.reply_message_with_http_info(ReplyMessageRequest(
+                        reply_token=event.reply_token, messages=[TextMessage(text=reply_text)]))
             except:
                 reply_text = "請聯絡管理員"
             # Confirm registration completion
-            line_bot_api.reply_message_with_http_info(
-                ReplyMessageRequest(
-                    reply_token=tk,
-                    messages=[TextMessage(text=reply_text)]
-                )
-            )
+            line_bot_api.reply_message_with_http_info(ReplyMessageRequest(
+                reply_token=event.reply_token, messages=[TextMessage(text=reply_text)]))
         elif data == "incorrect":
             # Reset user information if incorrect
             user_info = {
@@ -238,12 +185,9 @@ def handle_postback(event):
                 "tel": None,
                 "step": 0
             }
-            line_bot_api.reply_message_with_http_info(
-                ReplyMessageRequest(
-                    reply_token=tk,
-                    messages=[TextMessage(text="請重新輸入姓名")]
-                )
-            )
+            reply_text = "請重新輸入姓名"
+            line_bot_api.reply_message_with_http_info(ReplyMessageRequest(
+                reply_token=event.reply_token, messages=[TextMessage(text=reply_text)]))
         elif data == "start":
             buttons_template = ButtonsTemplate(
                 title="請問你要處理哪個項目？",
@@ -260,12 +204,8 @@ def handle_postback(event):
                 alt_text="請問你要進行什麼集點？",
                 template=buttons_template
             )
-            line_bot_api.reply_message_with_http_info(
-                ReplyMessageRequest(
-                    reply_token=tk,
-                    messages=[template_message]
-                )
-            )
+            line_bot_api.reply_message_with_http_info(ReplyMessageRequest(
+                reply_token=event.reply_token, messages=[template_message]))
         elif data == "logout":
             user_info = {  # 重設 user_info
                 "name": "",
@@ -273,12 +213,9 @@ def handle_postback(event):
                 "tel": "",
                 "step": 0
             }
-            line_bot_api.reply_message_with_http_info(
-                ReplyMessageRequest(
-                    reply_token=tk,
-                    messages=[TextMessage(text="登出成功")]
-                )
-            )
+            reply_text = "登出成功"
+            line_bot_api.reply_message_with_http_info(ReplyMessageRequest(
+                reply_token=event.reply_token, messages=[TextMessage(text=reply_text)]))
         elif data == "monitor":
             send_other_operation_options(line_bot_api, tk)
         elif data == "educate":
