@@ -152,7 +152,7 @@ def handle_message(event):
             response = requests.put(
                 url="https://linebotapi-tgkg.onrender.com/add/healthMeasurement",
                 json={
-                    "idNumber": user_info["idNumber"]
+                    "user_id": user_info["user_id"]
                 }  # 傳遞的 JSON 資料
             )
             if response.status_code == 200:
