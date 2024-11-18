@@ -15,8 +15,12 @@ from linebot.v3.messaging import (
 from linebot.v3.webhooks import MessageEvent, TextMessageContent, PostbackEvent
 import re
 import requests
+from dotenv import load_dotenv
+import os
 
 app = Flask(__name__)
+
+load_dotenv()
 
 user_info = {
     "user_id":None,
@@ -26,10 +30,15 @@ user_info = {
     "step": 0  # 用來追蹤步驟，0 表示尚未開始，1 表示請輸入姓名，2 表示請輸入身分證字號，以此類推
 }
 
-configuration = Configuration(
-    access_token='mh/r45bGW1j8Nvk2G/X8/1j+jf/0H60retZSLmLZ2bCJtwuMRB308Vnk5/LHQ4Yk2uGR/rkCQYoUvnqOl20BHaR8LmQTCWy4kldRqfUn5rBqRIQxUA171It7o+mRHPJHfU7H/v8H9ZZRQ0b/pxEmuQdB04t89/1O/w1cDnyilFU=')
-handler = WebhookHandler('84d36b609616d351c7c3cba259f0b769')
+access_token = os.getenv("ACCESS_TOKEN")
+secret = os.getenv("SECRET")
 
+configuration = Configuration(
+    access_token=access_token)
+handler = WebhookHandler(secret)
+
+print(access_token)
+print(secret)
 
 def send_operation_options(line_bot_api, user_id):
     print(user_id)
