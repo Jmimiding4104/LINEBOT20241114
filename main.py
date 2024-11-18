@@ -37,9 +37,6 @@ configuration = Configuration(
     access_token=access_token)
 handler = WebhookHandler(secret)
 
-print(access_token)
-print(secret)
-
 def send_operation_options(line_bot_api, user_id):
     print(user_id)
     buttons_template = ButtonsTemplate(
