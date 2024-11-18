@@ -109,7 +109,7 @@ def handle_message(event):
         line_bot_api = MessagingApi(api_client)
         user_info["user_id"] = event.source.user_id
         
-        if event.message.text == "連結 LINE 集點":
+        if event.message.text == "連結LINE集點":
             reply_text = "請輸入身分證字號"
             user_info["step"] = 1
             line_bot_api.reply_message_with_http_info(ReplyMessageRequest(
