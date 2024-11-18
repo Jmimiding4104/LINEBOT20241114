@@ -159,7 +159,7 @@ def handle_message(event):
             user_info["idNumber"] = event.message.text
             try:
                 response = requests.get(
-                    url="https://pypypy-lq48.onrender.com/search/",
+                    url="https://linebotapi-d8a1.onrender.com/search/",
                     json={
                         "idNumber": user_info["idNumber"]
                     }
@@ -188,7 +188,7 @@ def handle_postback(event):
         if data == "correct":
             try:
                 response = requests.post(
-                    url="https://pypypy-lq48.onrender.com/add_user/",  # 替換成你的 API URL
+                    url="https://linebotapi-d8a1.onrender.com/add_user/",
                     json={
                         "name": user_info["name"],
                         "idNumber": user_info["idNumber"],
@@ -249,7 +249,7 @@ def handle_postback(event):
                 reply_token=event.reply_token, messages=[TextMessage(text=reply_text)]))
         elif data == "monitor":
             response = requests.put(
-                url="https://pypypy-lq48.onrender.com/add/healthMeasurement",  # 替換成你的 API URL
+                url="https://linebotapi-d8a1.onrender.com/add/healthMeasurement",
                 json={
                     "idNumber": user_info["idNumber"]
                 }  # 傳遞的 JSON 資料
@@ -265,7 +265,7 @@ def handle_postback(event):
                     reply_token=event.reply_token, messages=[TextMessage(text=reply_text)]))
         elif data == "educate":
             response = requests.put(
-                url="https://pypypy-lq48.onrender.com/add/healthEducation",  # 替換成你的 API URL
+                url="https://linebotapi-d8a1.onrender.com/add/healthEducation",
                 json={
                     "idNumber": user_info["idNumber"]
                 }  # 傳遞的 JSON 資料
@@ -281,7 +281,7 @@ def handle_postback(event):
             send_other_operation_options(line_bot_api, user_info["user_id"])
         elif data == "exercise":
             response = requests.put(
-                url="https://pypypy-lq48.onrender.com/add/exercise",  # 替換成你的 API URL
+                url="https://linebotapi-d8a1.onrender.com/add/exercise",
                 json={
                     "idNumber": user_info["idNumber"]
                 }  # 傳遞的 JSON 資料
