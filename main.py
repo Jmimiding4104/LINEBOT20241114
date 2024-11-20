@@ -157,11 +157,11 @@ def handle_message(event):
             data = response.json()
             health_measurement = data.get("healthMeasurement")  # 使用 .get() 確保鍵存在
             if response.status_code == 200:
-                if(health_measurement < 30):
+                if(health_measurement < 15):
                     reply_text = f"集點完成，目前測量次數為{health_measurement}，加油!!"
-                if(health_measurement == 30):
+                if(health_measurement == 15):
                     reply_text = f"集滿囉!!!可以拿給志工確認換禮物囉~"
-                if(health_measurement > 30):
+                if(health_measurement > 15):
                     reply_text = "有持續量血壓很棒喔~"
                 line_bot_api.reply_message_with_http_info(ReplyMessageRequest(
                     reply_token=event.reply_token, messages=[TextMessage(text=reply_text)]))
