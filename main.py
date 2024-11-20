@@ -160,7 +160,7 @@ def handle_message(event):
                 if(health_measurement < 30):
                     reply_text = f"集點完成，目前測量次數為{health_measurement}，加油!!"
                 if(health_measurement == 30):
-                    reply_text = f"集點完成，目前測量次數為{health_measurement}，可以拿給志工確認換禮物囉~"
+                    reply_text = f"集滿囉!!!可以拿給志工確認換禮物囉~"
                 if(health_measurement > 30):
                     reply_text = "有持續量血壓很棒喔~"
                 line_bot_api.reply_message_with_http_info(ReplyMessageRequest(
